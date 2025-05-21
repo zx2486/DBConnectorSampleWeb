@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 // https://github.com/trandainhan/next.js-example-authentication-with-jwt/blob/master/server.js
 function Posts() {
-  const { isLoggedIn, setIsLoggedIn, loading } = useContext(AuthContext);
+  const { isLoggedIn, setIsLoggedIn, loading, apiUrl } = useContext(AuthContext);
   const [showPopup, setShowPopup] = useState(false);
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,7 +17,6 @@ function Posts() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
   const router = useRouter();
   useEffect(() => {
     if (loading) return; // Wait for loading to finish
@@ -74,7 +73,6 @@ function Posts() {
     }
     if (isSubmitting) return;
     setIsSubmitting(true);
-    const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
     try {
       const response = await fetch(`${apiUrl}/api/profile`, {
@@ -118,7 +116,6 @@ function Posts() {
     }
     if (isSubmitting) return;
     setIsSubmitting(true);
-    const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
     try {
       const response = await fetch(`${apiUrl}/api/user/password`, {

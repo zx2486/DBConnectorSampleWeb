@@ -27,4 +27,8 @@ module.exports = {
         code: 404,
         message: 'Not found'
     },
+    ALREADY_EXISTS: {
+        code: 409,
+        message: 'Already exists'
+    }
 }

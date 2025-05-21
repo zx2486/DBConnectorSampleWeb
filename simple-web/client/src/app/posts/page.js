@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 
 // https://github.com/trandainhan/next.js-example-authentication-with-jwt/blob/master/server.js
 function Posts() {
-  const { isLoggedIn, setIsLoggedIn, loading } = useContext(AuthContext);
+  const { isLoggedIn, setIsLoggedIn, loading, apiUrl } = useContext(AuthContext);
   const [posts, setPosts] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
   const router = useRouter();
   useEffect(() => {
     if (loading) return; // Wait for loading to finish

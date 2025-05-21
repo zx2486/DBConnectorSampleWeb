@@ -1,5 +1,6 @@
 const express = require('express');
-const router = express.Router();
+const openRouter = express.Router();
+const secureRouter = express.Router();
 const returnCode = require('../libs/returnCode');
 const { hash, compare } = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -7,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const tokenSecret = process.env.TOKEN_SECRET || require('crypto').randomBytes(64).toString('hex')
 const tokenExpiry = process.env.TOKEN_EXPIRY || '3600s'
 
-router.post('/', async (req, res) => {
+openRouter.post('/login', async (req, res) => {
   if (!req.app.db) {
     const error = returnCode.DATABASE_CONNECTION_ERROR;
     return res.status(error.code).json({ error: error.message });
@@ -43,6 +44,40 @@ router.post('/', async (req, res) => {
   res.status(returnCode.SUCCESS.code).json({ success: false, message: 'Invalid username or password' });
 });
 
+openRouter.post('/register', async (req, res) => {
+  if (!req.app.db) {
+    const error = returnCode.DATABASE_CONNECTION_ERROR;
+    return res.status(error.code).json({ message: error.message });
+  }
+  //{ username, newPassword, confirmPassword }
+  if (!req.body.username || !req.body.newPassword || !req.body.confirmPassword) {
+    const error = returnCode.INVALID_INPUT;
+    return res.status(error.code).json({ message: 'Username and password are required' });
+  }
+  const db = req.app.db;
+  const { username, newPassword, confirmPassword } = req.body;
+  if (newPassword !== confirmPassword) {
+    const error = returnCode.INVALID_INPUT;
+    return res.status(error.code).json({ message: 'Password and confirm password do not match' });
+  }
+  const result = await db.select([{ table: 'users' }], ['id'],
+    {
+      array: [
+        { field: 'username', comparator: '=', value: username },
+      ], is_or: false
+    },
+  );
+  if (result && result.rows.length > 0) {
+    const error = returnCode.ALREADY_EXISTS;
+    return res.status(error.code).json({ message: 'Username already exists' });
+  }
+  const salt = Math.random().toString(36).substring(2, 15);
+  const hashedPW = await hash(`${salt}:${newPassword}`, 10);
+  console.log('inserting', { username, password: hashedPW, salt });
+  const result2 = await db.insert('users', { username, password: hashedPW, salt });
+  return res.status(returnCode.SUCCESS.code).json({ success: true });
+});
+
 const extractJWT = (req, res, next) => {
   const token = req.headers['authorization'];
   if (!token) {
@@ -57,7 +92,7 @@ const extractJWT = (req, res, next) => {
   });
 };
 
-router.patch('/password', async (req, res) => {
+secureRouter.patch('/password', async (req, res) => {
   if (!req.app.db) {
     const error = returnCode.DATABASE_CONNECTION_ERROR;
     return res.status(error.code).json({ error: error.message });
@@ -101,4 +136,4 @@ router.patch('/password', async (req, res) => {
   res.status(returnCode.SUCCESS.code).json({ success: false, message: 'Invalid user or password' });
 })
 
-module.exports = { router, extractJWT };
+module.exports = { openRouter, secureRouter, extractJWT };

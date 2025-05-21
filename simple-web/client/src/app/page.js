@@ -5,7 +5,7 @@ import { AuthContext } from "./layout";
 
 
 export default function Home() {
-  const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext); // Track login state
+  const { isLoggedIn, setIsLoggedIn, apiUrl } = useContext(AuthContext); // Track login state
   const [username, setUsername] = useState(""); // Track username input
   const [password, setPassword] = useState(""); // Track password input
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,10 +20,9 @@ export default function Home() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     localStorage.removeItem("accessToken");
-    const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
     try {
-      const response = await fetch(`${apiUrl}/api/login`, {
+      const response = await fetch(`${apiUrl}/api/account/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,6 +125,23 @@ export default function Home() {
         >
           View public posts
         </a>
+        {!isLoggedIn ? (
+          <a
+            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
+            href="/register"
+            rel="noopener noreferrer"
+          >
+            Register
+          </a>
+        ) : (
+          <a
+            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+            rel="noopener noreferrer"
+
+          >
+            Logout
+          </a>
+        )}
       </div>
     </main>
   );

@@ -25,6 +25,8 @@ const geistMono = Geist_Mono({
 // Create a context to share the isLoggedIn state
 export const AuthContext = createContext();
 
+const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
 export default function RootLayout({ children }) {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -72,7 +74,7 @@ export default function RootLayout({ children }) {
     </a>
   </footer>);
   return (
-    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, loading }}>
+    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, loading, apiUrl }}>
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -3,10 +3,37 @@
 import React, { useState } from "react";
 
 function SubmitPost() {
+  const { isLoggedIn, setIsLoggedIn, loading, apiUrl } = useContext(AuthContext);
+  const [showPopup, setShowPopup] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  useEffect(() => {
+    if (loading) return; // Wait for loading to finish
+    if (!isLoggedIn) {
+      setShowPopup(true); // Show the popup if the user is not logged in
+      return;
+    }
+  }, [apiUrl, isLoggedIn, loading]);
+
+  const handlePopupClose = () => {
+    setShowPopup(false);
+    console.log("Redirecting to home page...");
+    router.push("/"); // Redirect to the main page
+  };
+
+  if (showPopup) {
+    return (
+      <div className="popup">
+        <div className="popup-content">
+          <p>You must be logged in to view this page.</p>
+          <button onClick={handlePopupClose}>Go to Home</button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,7 +43,6 @@ function SubmitPost() {
     }
     if (isSubmitting) return;
     setIsSubmitting(true);
-    const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
     try {
       const response = await fetch(`${apiUrl}/api/posts`, {
