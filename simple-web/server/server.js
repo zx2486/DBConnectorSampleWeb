@@ -15,6 +15,7 @@ const masterDBConfig = {
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_DATABASE || 'postgres',
+  //  logLevel: process.env.DB_LOG_LEVEL || 'error',
 }
 
 const asyncHandler = (fn) => (req, res, next) => {

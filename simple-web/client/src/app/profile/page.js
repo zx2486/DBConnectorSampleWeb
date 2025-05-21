@@ -24,7 +24,6 @@ function Posts() {
       setShowPopup(true); // Show the popup if the user is not logged in
       return;
     }
-    console.log("Fetching profile...");
     fetch(`${apiUrl}/api/profile`, {
       method: "GET",
       headers: {
