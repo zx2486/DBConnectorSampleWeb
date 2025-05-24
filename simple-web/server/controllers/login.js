@@ -4,10 +4,10 @@ const secureRouter = express.Router();
 const returnCode = require('../libs/returnCode');
 const { hash, compare } = require('bcrypt');
 const jwt = require('jsonwebtoken');
-import { v4 as uuidv4 } from 'uuid'
+const { v4: uuidv4 } = require('uuid');
 // Make sure to set your own secret in .env file
 const tokenSecret = process.env.TOKEN_SECRET || require('crypto').randomBytes(64).toString('hex')
-const tokenExpiry = process.env.TOKEN_EXPIRY || '3600s'
+const tokenExpiry = process.env.TOKEN_EXPIRY || '3600'
 
 openRouter.post('/login', async (req, res) => {
   if (!req.app.db) {
@@ -36,11 +36,11 @@ openRouter.post('/login', async (req, res) => {
   // console.log('hashedPW', hashedPW, password, salt, (await compare(`${salt}:${password}`, hashedPW)));
   if (await compare(`${salt}:${password}`, hashedPW)) {
     const sessionId = uuidv4();
-    const jwtToken = jwt.sign({ id, username, sessionId }, tokenSecret, { expiresIn: tokenExpiry });
+    const jwtToken = jwt.sign({ id, username, sessionId }, tokenSecret, { expiresIn: tokenExpiry + 's' });
     const result2 = await db.insert('user_valid_sessions', { session_id: sessionId, user_id: id });
     res.status(returnCode.SUCCESS.code).json({
       success: true,
-      accessToken: jwt.sign({ id, username }, tokenSecret, { expiresIn: tokenExpiry })
+      accessToken: jwtToken
     });
     return
   }
@@ -63,14 +63,14 @@ openRouter.post('/register', async (req, res) => {
     const error = returnCode.INVALID_INPUT;
     return res.status(error.code).json({ message: 'Password and confirm password do not match' });
   }
-  const result = await db.select([{ table: 'users' }], ['id'],
+  const selectResult = await db.select([{ table: 'users' }], ['id'],
     {
       array: [
         { field: 'username', comparator: '=', value: username },
       ], is_or: false
     },
   );
-  if (result && result.rows.length > 0) {
+  if (selectResult && selectResult.rows.length > 0) {
     const error = returnCode.ALREADY_EXISTS;
     return res.status(error.code).json({ message: 'Username already exists' });
   }
@@ -79,54 +79,80 @@ openRouter.post('/register', async (req, res) => {
   const sessionId = uuidv4();
 
   // create new user and create a new session token
-  const result = await db.transation([
-    (_previousResult, dbClient) => {
+  const transactionResult = await db.transaction([
+    async (_previousResult, dbClient) => {
       const query = db.buildInsertQuery('users', { username, password: hashedPW, salt });
       const result = await dbClient.query(query.text, query.values);
       return { rows: result.rows, count: result.rowCount || 0, ttl: undefined }
     },
-    (_previousResult, dbClient) => {
+    async (_previousResult, dbClient) => {
       const userId = _previousResult?.rows?.[0]?.id || null;
       const query = db.buildInsertQuery('user_valid_sessions', { session_id: sessionId, user_id: userId });
       const result = await dbClient.query(query.text, query.values);
-      return { rows: [{ result.rows }], count: result.rowCount || 0, ttl: undefined }
+      return { rows: result.rows, count: result.rowCount || 0, ttl: undefined }
     },
   ])
 
-  const userId = result?.rows?.[0]?.user_id || null;
-  const jwtToken = jwt.sign({ id, username, sessionId }, tokenSecret, { expiresIn: tokenExpiry });
+  const userId = transactionResult?.rows?.[0]?.user_id || null;
+  const jwtToken = jwt.sign({ id: userId, username, sessionId }, tokenSecret, { expiresIn: tokenExpiry + 's' });
   res.status(returnCode.SUCCESS.code).json({
     success: true,
-    accessToken: jwt.sign({ id, username }, tokenSecret, { expiresIn: tokenExpiry })
+    accessToken: jwtToken
   });
   return
 
-  const result2 = await db.insert('users', { username, password: hashedPW, salt });
-  return res.status(returnCode.SUCCESS.code).json({ success: true });
+  // const result2 = await db.insert('users', { username, password: hashedPW, salt });
+  // return res.status(returnCode.SUCCESS.code).json({ success: true });
 });
 
-const extractJWT = (req, res, next) => {
+const extractJWT = async (req, res, next) => {
   const token = req.headers['authorization'];
   if (!token) {
     return res.status(returnCode.UNAUTHORIZED.code).json({ message: 'Unauthorized' });
   }
-  jwt.verify(token.replace('Bearer ', ''), tokenSecret, (err, decoded) => {
-    if (err) {
-      return res.status(returnCode.UNAUTHORIZED.code).json({ message: 'Unauthorized' });
-    }
+  try {
+    const decoded = await new Promise((resolve, reject) => {
+      jwt.verify(token.replace('Bearer ', ''), tokenSecret, (err, decoded) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(decoded);
+      });
+    })
     req.userId = decoded.id;
     req.sessionId = decoded.sessionId;
-    const result = await db.select(
+    const db = req.app.db;
+    // Call to the db directly, no caching
+    const result = await db.query(
+      {
+        text: `
+        SELECT user_id 
+        FROM user_valid_sessions 
+        WHERE session_id = $1 
+          AND active = $2 
+          AND created_at > NOW() - INTERVAL '${tokenExpiry} seconds'
+        `,
+        values: [req.sessionId, true]
+      },
+      false,
+      true
+    )
+    /* const result = await db.select(
       [{
         table: 'user_valid_sessions'
       }], ['user_id'],
-      { array: [['session_id', req.sessionId], ['active', true], ['created_at', '>', `NOW() - ${tokenExpiry}`]], is_or: false },
+      { array: [['session_id', req.sessionId], ['active', true], ['created_at', '>', `NOW() - INTERVAL '${tokenExpiry} seconds'`]], is_or: false },
     )
+    */
     if (result && result.rows.length > 0 && result.rows[0].user_id === req.userId) {
       next();
+      return
     }
     return res.status(returnCode.UNAUTHORIZED.code).json({ message: 'Session token expired' });
-  });
+  } catch (err) {
+    console.error('JWT verification error:', err);
+    return res.status(returnCode.UNAUTHORIZED.code).json({ message: 'Unauthorized' });
+  }
 };
 
 secureRouter.patch('/password', async (req, res) => {
@@ -162,7 +188,7 @@ secureRouter.patch('/password', async (req, res) => {
     // Security worst practice, keeping the plaintext password. For testing only
     const newSalt = newPassword;
     const newHashedPW = await hash(`${newSalt}:${newPassword}`, 10);
-    const result = await db.update('users', { password: newHashedPW, salt: newSalt }, {
+    const updateResult = await db.update('users', { password: newHashedPW, salt: newSalt }, {
       array: [
         { field: 'id', comparator: '=', value: req.userId },
       ], is_or: false
@@ -172,5 +198,25 @@ secureRouter.patch('/password', async (req, res) => {
   }
   res.status(returnCode.SUCCESS.code).json({ success: false, message: 'Invalid user or password' });
 })
+
+secureRouter.post('/logout', async (req, res) => {
+  if (!req.app.db) {
+    const error = returnCode.DATABASE_CONNECTION_ERROR;
+    return res.status(error.code).json({ error: error.message });
+  }
+  if (!req.userId || !req.sessionId) {
+    const error = returnCode.UNAUTHORIZED;
+    return res.status(error.code).json({ error: 'User not logged in' });
+  }
+  await req.app.db.update('user_valid_sessions', { active: false }, {
+    array: [
+      { field: 'session_id', comparator: '=', value: req.sessionId },
+      { field: 'user_id', comparator: '=', value: req.userId },
+    ], is_or: false
+  });
+  res.status(returnCode.SUCCESS.code).json({
+    success: true
+  });
+});
 
 module.exports = { openRouter, secureRouter, extractJWT };

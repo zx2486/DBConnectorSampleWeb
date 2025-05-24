@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 // https://github.com/trandainhan/next.js-example-authentication-with-jwt/blob/master/server.js
 function Posts() {
-  const { isLoggedIn, loading, apiUrl } = useContext(AuthContext);
+  const { isLoggedIn, setIsLoggedIn, loading, apiUrl } = useContext(AuthContext);
   const [showPopup, setShowPopup] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +36,7 @@ function Posts() {
     return (
       <div className="popup">
         <div className="popup-content">
-          <p>You must not be logged in to view this page.</p>
+          <p>You are login already.</p>
           <button onClick={handlePopupClose}>Go to Home</button>
         </div>
       </div>
@@ -67,10 +67,14 @@ function Posts() {
       });
       const data = await response.json();
       if (response.ok && data.success) {
-        setToastMessage("Registered successfully, please go to login!");
+        setToastMessage("Registered successfully !");
         setUsername("");
         setNewPassword("");
         setConfirmPassword("");
+        if (data.accessToken) {
+          // set access token in local storage
+          localStorage.setItem("accessToken", data.accessToken);
+        }
       } else {
         setToastMessage("Failed registering with response:" + data.message);
       }
@@ -83,6 +87,9 @@ function Posts() {
       // Automatically hide the toast after 3 seconds
       setTimeout(() => {
         setToastMessage("");
+        if (localStorage.getItem("accessToken")) {
+          setIsLoggedIn(true);
+        }
         setRefreshKey((prevKey) => prevKey + 1); // Trigger refresh
       }, 3000);
     }

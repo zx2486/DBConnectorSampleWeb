@@ -28,9 +28,18 @@ const wrapRouter = (router) => {
     if (layer.route) {
       const routePath = layer.route.path;
       const routeMethods = layer.route.methods;
-      Object.keys(routeMethods).forEach((method) => {
+      /* Object.keys(routeMethods).forEach((method) => {
         wrappedRouter[method](routePath, asyncHandler(layer.route.stack[0].handle));
       });
+      */
+
+      Object.keys(routeMethods).forEach((method) => {
+        const middlewares = layer.route.stack.map((middleware) =>
+          asyncHandler(middleware.handle)
+        );
+        wrappedRouter[method](routePath, ...middlewares); // Spread all wrapped middlewares
+      });
+
     }
   });
   return wrappedRouter;
@@ -68,13 +77,6 @@ const startServer = async () => {
 
   app.use('/api/account',
     wrapRouter(loginRouter)
-  );
-
-  app.use('/api/logout',
-    extractJWT,
-    (req, res) => {
-      res.status(200).json({ success: true });
-    }
   );
 
   app.use('/api/profile',

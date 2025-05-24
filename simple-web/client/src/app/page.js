@@ -53,6 +53,37 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${apiUrl}/api/user/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setToastMessage("Logout successfully!");
+      } else {
+        setToastMessage((response?.message) ? `Logout failed: ${response.message}` : 'Logout failed.');
+      }
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      setToastMessage("Failed to logout.");
+    } finally {
+      setIsLoggedIn(false);
+      localStorage.removeItem("accessToken");
+
+      // Automatically hide the toast after 3 seconds
+      setTimeout(() => {
+        setToastMessage("");
+      }, 3000);
+    }
+  };
+
   return (
     <main className="main">
       <div className="flex gap-4 items-center flex-col sm:flex-row">
@@ -137,7 +168,7 @@ export default function Home() {
           <a
             className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
             rel="noopener noreferrer"
-
+            onClick={handleLogout}
           >
             Logout
           </a>
