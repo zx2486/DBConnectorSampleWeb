@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useContext } from "react";
-import { AuthContext } from "./layout";
+import { AuthContext, apiService } from "./layout";
 
 
 export default function Home() {
@@ -22,6 +22,8 @@ export default function Home() {
     localStorage.removeItem("accessToken");
 
     try {
+      // const response = await apiService.post('/api/account/login', {}, {username, password});
+
       const response = await fetch(`${apiUrl}/api/account/login`, {
         method: "POST",
         headers: {
@@ -56,6 +58,7 @@ export default function Home() {
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
+      // const response = await apiService.post('/api/account/logout', {}, {username, password});
       const response = await fetch(`${apiUrl}/api/user/logout`, {
         method: "POST",
         headers: {

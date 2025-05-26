@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createContext, useState, useEffect } from "react";
+import ApiService from "./servers/api";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +27,8 @@ const geistMono = Geist_Mono({
 export const AuthContext = createContext();
 
 const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
+export const apiService = new ApiService(apiUrl);
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();

@@ -30,5 +30,13 @@ module.exports = {
     ALREADY_EXISTS: {
         code: 409,
         message: 'Already exists'
-    }
+    },
+    IDEMPOTENCY_REQUIRED: {
+        code: 428,
+        message: 'Idempotency key required'
+    },
+    MISSING_CSRF: {
+        code: 403,
+        message: 'Missing CSRF token'
+    },
 }

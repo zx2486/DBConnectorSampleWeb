@@ -6,6 +6,14 @@ const cors = require('cors');
 const postsRouter = require('./controllers/posts');
 const { openRouter: loginRouter, secureRouter: userRouter, extractJWT } = require('./controllers/login');
 const profileRouter = require('./controllers/profile');
+const {
+  csrfProtection,
+  setCsrfToken,
+  handleCsrfError,
+  idempotencyMiddleware,
+  generateIdempotencyKey,
+  securityRouter
+} = require('./middleware/security');
 
 const dbConnector = require('../../../DBConnectorToolkit/dist').default;
 const masterDBConfig = {
@@ -58,34 +66,52 @@ const startServer = async () => {
   const port = process.env.SERVER_PORT || 4000;
 
   // Enable CORS for all routes
-  app.use(cors());
+  app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3800',
+    credentials: true
+  }));
+  app.use(cookieParser());
   // Parse JSON request bodies
   app.use(express.json());
 
   // Use the dbConnector middleware
   app.use((req, res, next) => {
-    req.app = {
-      db
-    };
+    req.app = { db };
     next();
   });
 
+  // CSRF error handler
+  // TODO: Should be before or after the CSRF protection middleware?
+  app.use(handleCsrfError);
+
+  app.get('/api/security',
+    wrapRouter(securityRouter)
+  )
+
   // API route
   app.use('/api/posts',
+    csrfProtection, setCsrfToken,
+    idempotencyMiddleware,
     wrapRouter(postsRouter)
   );
 
   app.use('/api/account',
+    csrfProtection, setCsrfToken,
+    idempotencyMiddleware,
     wrapRouter(loginRouter)
   );
 
   app.use('/api/profile',
     extractJWT,
+    csrfProtection, setCsrfToken,
+    idempotencyMiddleware,
     wrapRouter(profileRouter)
   );
 
   app.use('/api/user',
     extractJWT,
+    csrfProtection, setCsrfToken,
+    idempotencyMiddleware,
     wrapRouter(userRouter)
   );
 
