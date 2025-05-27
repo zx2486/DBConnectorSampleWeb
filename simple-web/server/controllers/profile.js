@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const returnCode = require('../libs/returnCode');
 
-// TODO: try catch, and also make things more modular
 router.get('/', async (req, res) => {
   if (!req.app.db) {
     const error = returnCode.DATABASE_CONNECTION_ERROR;

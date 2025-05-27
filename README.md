@@ -25,7 +25,7 @@ And open one more terminal, go to the server folder and start the server by:
 ``` sh
 node server.js
 ```
-Now you can visit the website via localhost:3000 and API server via localhost:4000
+Now you can visit the website via localhost:3800 and API server via localhost:4000
 
 In case you woulid like to make a new migration file: 
 ``` sh

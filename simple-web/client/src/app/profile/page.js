@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../layout';
+import { AuthContext, apiService } from '../layout';
 import { useRouter } from 'next/navigation';
 
 // https://github.com/trandainhan/next.js-example-authentication-with-jwt/blob/master/server.js
@@ -24,20 +24,17 @@ function Posts() {
       setShowPopup(true); // Show the popup if the user is not logged in
       return;
     }
-    fetch(`${apiUrl}/api/profile`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
-    })
+    const response = apiService.get('/api/profile', {
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    }, {})
       .then(response => {
         if (response.status === 401 || response.status === 400 || response.status === 403) {
           setShowPopup(true);
           setIsLoggedIn(false);
           return []
         }
-        return response.json()
+        // return response.json()
+        return response?.data || {};
       })
       .then(data => {
         setContent(data.content ?? data)
@@ -49,7 +46,6 @@ function Posts() {
 
   const handlePopupClose = () => {
     setShowPopup(false);
-    console.log("Redirecting to home page...");
     router.push("/"); // Redirect to the main page
   };
 
@@ -74,15 +70,10 @@ function Posts() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ content }),
-      });
-      const data = await response.json();
+      const response = await apiService.post('/api/profile', {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }, { content });
+      const data = response?.data || {};
       if (response.ok && data.success) {
         setToastMessage("Upsert remark request submitted successfully!");
         // setContent("");
@@ -117,15 +108,10 @@ function Posts() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/user/password`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
-      });
-      const data = await response.json();
+      const response = await apiService.patch('/api/user/password', {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }, { oldPassword, newPassword, confirmPassword });
+      const data = response?.data || {};
       if (response.ok && data.success) {
         setToastMessage("Password update request submitted successfully!");
         setOldPassword("");

@@ -33,7 +33,7 @@ const generateIdempotencyKey = () => {
 // Middleware to handle idempotency keys
 const idempotencyMiddleware = async (req, res, next) => {
   // Only apply to POST, PUT, DELETE methods
-  if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
+  if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
     return next();
   }
 

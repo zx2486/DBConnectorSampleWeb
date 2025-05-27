@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const postsRouter = require('./controllers/posts');
 const { openRouter: loginRouter, secureRouter: userRouter, extractJWT } = require('./controllers/login');
 const profileRouter = require('./controllers/profile');
@@ -11,18 +12,17 @@ const {
   setCsrfToken,
   handleCsrfError,
   idempotencyMiddleware,
-  generateIdempotencyKey,
   securityRouter
-} = require('./middleware/security');
+} = require('./controllers/security');
 
 const dbConnector = require('../../../DBConnectorToolkit/dist').default;
 const masterDBConfig = {
   client: 'pg',
   endpoint: process.env.DB_ENDPOINT || 'localhost',
   port: process.env.DB_PORT || 5432,
-  username: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_DATABASE || 'postgres',
+  username: process.env.DB_USER || 'user',
+  password: process.env.DB_PASSWORD || 'password',
+  database: process.env.DB_DATABASE || 'mydatabase',
   //  logLevel: process.env.DB_LOG_LEVEL || 'error',
 }
 
@@ -81,10 +81,9 @@ const startServer = async () => {
   });
 
   // CSRF error handler
-  // TODO: Should be before or after the CSRF protection middleware?
   app.use(handleCsrfError);
 
-  app.get('/api/security',
+  app.use('/api/security',
     wrapRouter(securityRouter)
   )
 

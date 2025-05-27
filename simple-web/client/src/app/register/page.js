@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../layout';
+import { AuthContext, apiService } from '../layout';
 import { useRouter } from 'next/navigation';
 
 // https://github.com/trandainhan/next.js-example-authentication-with-jwt/blob/master/server.js
@@ -28,7 +28,6 @@ function Posts() {
 
   const handlePopupClose = () => {
     setShowPopup(false);
-    console.log("Redirecting to home page...");
     router.push("/"); // Redirect to the main page
   };
 
@@ -57,15 +56,8 @@ function Posts() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/account/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ username, newPassword, confirmPassword }),
-      });
-      const data = await response.json();
+      const response = await apiService.post('/api/account/register', {}, { username, newPassword, confirmPassword });
+      const data = response?.data || {};
       if (response.ok && data.success) {
         setToastMessage("Registered successfully !");
         setUsername("");

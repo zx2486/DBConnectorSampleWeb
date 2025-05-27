@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { AuthContext, apiService } from '../../layout';
 
 function SubmitPost() {
   const { isLoggedIn, setIsLoggedIn, loading, apiUrl } = useContext(AuthContext);
@@ -20,7 +21,6 @@ function SubmitPost() {
 
   const handlePopupClose = () => {
     setShowPopup(false);
-    console.log("Redirecting to home page...");
     router.push("/"); // Redirect to the main page
   };
 
@@ -45,14 +45,9 @@ function SubmitPost() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/posts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ title, content }),
-      });
+      const response = await apiService.post('/api/posts', {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }, { title, content });
 
       if (response.ok) {
         setToastMessage("Post submitted successfully!");

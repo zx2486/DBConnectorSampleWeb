@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../../layout';
+import { AuthContext, apiService } from '../../layout';
 import { useRouter } from 'next/navigation';
 
 // https://github.com/trandainhan/next.js-example-authentication-with-jwt/blob/master/server.js
@@ -25,20 +25,17 @@ function Posts() {
       return;
     }
 
-    fetch(`${apiUrl}/api/posts/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
-    })
+    const response = apiService.get('/api/posts/me', {
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    }, {})
       .then(response => {
         if (response.status === 401) {
           setShowPopup(true);
           setIsLoggedIn(false);
           return []
         }
-        return response.json()
+        // return response.json()
+        return response?.data || {};
       })
       .then(data => setPosts(data.rows || data))
       .catch(error => {
@@ -48,7 +45,6 @@ function Posts() {
 
   const handlePopupClose = () => {
     setShowPopup(false);
-    console.log("Redirecting to home page...");
     router.push("/"); // Redirect to the main page
   };
 
@@ -74,14 +70,9 @@ function Posts() {
   const handleDeletePopupTrue = async () => {
     try {
       const postId = deleteId;
-      const response = await fetch(`${apiUrl}/api/posts/${postId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
+      const response = await apiService.delete(`/api/posts/${postId}`, {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }, { });
       if (response.ok) {
         console.log(`Post with ID ${postId} deleted successfully.`);
         setDeleteId(null);
@@ -116,15 +107,10 @@ function Posts() {
   const handleHidePopupTrue = async () => {
     try {
       const postId = hideId;
-      const response = await fetch(`${apiUrl}/api/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: JSON.stringify({ active: !posts.find(post => post.id === postId).active }),
-      });
-
+      const response = await apiService.put(`/api/posts/${postId}`, {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }, { active: !posts.find(post => post.id === postId).active });
+      
       if (response.ok) {
         console.log(`Post with ID ${postId} updated successfully.`);
         setHideId(null);
@@ -141,7 +127,7 @@ function Posts() {
     return (
       <div className="popup">
         <div className="popup-content">
-          <p>Are you confirm to {(!posts.find(post => post.id === hideId).active) ? 'hide' : 'make public'} this post?</p>
+          <p>Are you confirm to {(posts.find(post => post.id === hideId).active) ? 'hide' : 'make public'} this post?</p>
           <button onClick={handleHidePopupTrue}>Confirm</button>
           <button onClick={handleHidePopClose}>Cancel</button>
         </div>

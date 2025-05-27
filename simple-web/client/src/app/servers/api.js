@@ -68,7 +68,7 @@ class ApiService {
       let idempotencyKey = null;
 
       // For POST, PUT, DELETE operations, get an idempotency key
-      if (['POST', 'PUT', 'DELETE'].includes(method.toUpperCase())) {
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase())) {
         idempotencyKey = await this.getIdempotencyKey(endpoint);
       }
 
@@ -99,9 +99,9 @@ class ApiService {
         // Remove the used key
         this.idempotencyKeys.delete(endpoint);
       }
-
       const responseData = await response.json();
-      return { status: response.status, data: responseData };
+      const { ok, redirected, status, statusText, url, type } = response;
+      return { ok, redirected,status,statusText,url,type, data: responseData };
     } catch (error) {
       console.error(`API error (${method} ${endpoint}):`, error);
       throw error;
@@ -123,6 +123,10 @@ class ApiService {
 
   async delete(endpoint, headers = {}) {
     return this.request('DELETE', endpoint, headers);
+  }
+
+  async patch(endpoint, headers = {}, data) {
+    return this.request('PATCH', endpoint, headers, data);
   }
 }
 

@@ -33,7 +33,6 @@ openRouter.post('/login', async (req, res) => {
     return
   }
   const { id, salt, password: hashedPW } = result.rows[0];
-  // console.log('hashedPW', hashedPW, password, salt, (await compare(`${salt}:${password}`, hashedPW)));
   if (await compare(`${salt}:${password}`, hashedPW)) {
     const sessionId = uuidv4();
     const jwtToken = jwt.sign({ id, username, sessionId }, tokenSecret, { expiresIn: tokenExpiry + 's' });
