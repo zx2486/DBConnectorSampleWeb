@@ -20,23 +20,24 @@ services:
       - "6379:6379"
 
   zookeeper:
-    image: wurstmeister/zookeeper:latest
+    image: zookeeper:latest
     container_name: zookeeper
     ports:
-      - "32181:2181"
+      - "2181:2181"
 
   kafka:
-    image: wurstmeister/kafka:latest
+    image: niks123123/kafka:latest
     container_name: kafka
     ports:
       - "9092:9092"
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:32181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka_data:/var/run/docker.sock
 
 volumes:
   postgres_data:
+  redis_data:
+  kafka_data:
+    driver: local
