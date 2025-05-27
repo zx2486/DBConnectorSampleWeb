@@ -2,16 +2,38 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:latest
+    image: 'docker.io/bitnami/postgresql:11-debian-10'
     container_name: postgres
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydatabase
+      - POSTGRESQL_PGAUDIT_LOG=READ,WRITE
+      - POSTGRESQL_LOG_HOSTNAME=true
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_DATABASE=mydatabase
+      - POSTGRESQL_PASSWORD=password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  postgresql-slave:
+    image: 'docker.io/bitnami/postgresql:11-debian-10'
+    ports:
+      - '5433:5432'
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_PASSWORD=password
+      - POSTGRESQL_MASTER_HOST=postgres
+      - POSTGRESQL_PGAUDIT_LOG=READ,WRITE
+      - POSTGRESQL_LOG_HOSTNAME=true
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
 
   redis:
     image: redis:latest
