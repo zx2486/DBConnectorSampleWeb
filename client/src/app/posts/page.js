@@ -60,6 +60,7 @@ function Posts() {
   return (
     <main className="main">
       <h1 className="title">Posts</h1>
+      <p>Result may delay up to 60s due to caching</p>
       <div className="grid">
         {posts && posts.length > 0 && posts?.map(post => (
           <a key={post.id} className="card">

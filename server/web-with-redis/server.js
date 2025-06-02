@@ -51,6 +51,13 @@ const replicaDBConfig = [
   },
 ]
 
+const redisConfig = {
+  client: 'ioredis',
+  url: 'localhost:6379',
+  cacheTTL: 60, // Cache TTL in seconds
+  revalidate: 10 // Revalidate cache when cache will expire in 10 seconds
+}
+
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -81,7 +88,7 @@ const wrapRouter = (router) => {
 const startServer = async () => {
   let db = null;
   try {
-    db = dbConnector(masterDBConfig, replicaDBConfig);
+    db = dbConnector(masterDBConfig, replicaDBConfig, redisConfig);
     await db.connect();
   } catch (e) {
     console.error('Error connecting to the database:', e);

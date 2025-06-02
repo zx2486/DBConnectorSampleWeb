@@ -3,13 +3,13 @@ const router = express.Router();
 const returnCode = require('../libs/returnCode');
 const { extractJWT } = require('./login');
 
-// TODO: try catch, and also make things more modular
 router.get('/', async (req, res) => {
   if (!req.app.db) {
     const error = returnCode.DATABASE_CONNECTION_ERROR;
     return res.status(error.code).json({ error: error.message });
   }
   const db = req.app.db;
+  // Get the records which maybe cached
   const result = await db.select(
     [{
       table: 'posts'
@@ -37,12 +37,14 @@ const checkLoginAndDB = (req, res, next) => {
 
 router.get('/me', extractJWT, checkLoginAndDB, async (req, res) => {
   const db = req.app.db;
+  // Get the latest records
   const result = await db.select(
     [{
       table: 'posts'
     }],
     ['id', 'title', 'content', 'active'],
     { array: [['author_id', req.userId]], is_or: false },
+    undefined, undefined, undefined, true
   )
   res.json(result);
 });

@@ -72,7 +72,7 @@ function Posts() {
       const postId = deleteId;
       const response = await apiService.delete(`/api/posts/${postId}`, {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      }, { });
+      }, {});
       if (response.ok) {
         console.log(`Post with ID ${postId} deleted successfully.`);
         setDeleteId(null);
@@ -110,7 +110,7 @@ function Posts() {
       const response = await apiService.put(`/api/posts/${postId}`, {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       }, { active: !posts.find(post => post.id === postId).active });
-      
+
       if (response.ok) {
         console.log(`Post with ID ${postId} updated successfully.`);
         setHideId(null);
@@ -138,6 +138,7 @@ function Posts() {
   return (
     <main className="main">
       <h1 className="title">Posts</h1>
+      <p>Always latest</p>
       <div className="grid">
         {posts && posts.length > 0 && posts?.map(post => (
           <a key={post.id} className="card">

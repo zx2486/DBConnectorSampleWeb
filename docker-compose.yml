@@ -35,6 +35,23 @@ services:
       - POSTGRESQL_REPLICATION_PASSWORD=repl_password
       - POSTGRESQL_MASTER_PORT_NUMBER=5432
 
+  postgresql-slave-2:
+    image: 'docker.io/bitnami/postgresql:11-debian-10'
+    ports:
+      - '5434:5432'
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_PASSWORD=password
+      - POSTGRESQL_MASTER_HOST=postgres
+      - POSTGRESQL_PGAUDIT_LOG=READ,WRITE
+      - POSTGRESQL_LOG_HOSTNAME=true
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
+
   redis:
     image: redis:latest
     container_name: redis
