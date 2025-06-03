@@ -13,9 +13,11 @@ const {
   handleCsrfError,
   idempotencyMiddleware,
   securityRouter
-} = require('../simple-web/controllers/security');
+} = require('./controllers/security');
 
 const dbConnector = require('../../../DBConnectorToolkit/dist').default;
+const IORedisClass = require('../../../DBConnectorToolkit/dist/ioredisClass').default;
+
 const masterDBConfig = {
   client: 'pg',
   endpoint: process.env.DB_ENDPOINT || 'localhost',
@@ -53,7 +55,7 @@ const replicaDBConfig = [
 
 const redisConfig = {
   client: 'ioredis',
-  url: 'localhost:6379',
+  url: process.env.REDIS_URL || 'localhost:6379',
   cacheTTL: 60, // Cache TTL in seconds
   revalidate: 10 // Revalidate cache when cache will expire in 10 seconds
 }
@@ -87,11 +89,19 @@ const wrapRouter = (router) => {
 
 const startServer = async () => {
   let db = null;
+  let cache = null;
   try {
     db = dbConnector(masterDBConfig, replicaDBConfig, redisConfig);
     await db.connect();
   } catch (e) {
     console.error('Error connecting to the database:', e);
+  }
+
+  try {
+    cache = new IORedisClass({ ...redisConfig, cacheHeader: 'idempotencyStore' });
+    await cache.connect();
+  } catch (e) {
+    console.error('Error connecting to the Redis cache:', e);
   }
 
   const app = express();
@@ -108,7 +118,7 @@ const startServer = async () => {
 
   // Use the dbConnector middleware
   app.use((req, res, next) => {
-    req.app = { db };
+    req.app = { db, cache };
     next();
   });
 

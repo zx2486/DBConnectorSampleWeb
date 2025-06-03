@@ -78,6 +78,7 @@ router.put('/:post_id', extractJWT, checkLoginAndDB, async (req, res) => {
     }],
     ['id'],
     condition,
+    undefined, undefined, undefined, true
   )
   if (!selectResult.rows || selectResult.count < 1) {
     const error = returnCode.NOT_FOUND;
@@ -101,6 +102,7 @@ router.delete('/:post_id', extractJWT, checkLoginAndDB, async (req, res) => {
     }],
     ['id'],
     condition,
+    undefined, undefined, undefined, true
   )
   if (!selectResult.rows || selectResult.count < 1) {
     const error = returnCode.NOT_FOUND;

@@ -21,7 +21,8 @@ router.get('/', async (req, res) => {
       array: [
         { field: 'user_id', comparator: '=', value: req.userId },
       ], is_or: false
-    }
+    },
+    undefined, undefined, undefined, true
   )
 
   res.json({ content: result?.rows?.[0]?.self_remark || '' });

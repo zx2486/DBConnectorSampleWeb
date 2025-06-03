@@ -27,6 +27,7 @@ openRouter.post('/login', async (req, res) => {
         { field: 'username', comparator: '=', value: username },
       ], is_or: false
     },
+    undefined, undefined, undefined, true
   );
   if (!result || result.rows.length < 1) {
     res.status(returnCode.SUCCESS.code).json({ success: false, message: 'Invalid username or password' });
@@ -68,6 +69,7 @@ openRouter.post('/register', async (req, res) => {
         { field: 'username', comparator: '=', value: username },
       ], is_or: false
     },
+    undefined, undefined, undefined, true
   );
   if (selectResult && selectResult.rows.length > 0) {
     const error = returnCode.ALREADY_EXISTS;
@@ -176,6 +178,7 @@ secureRouter.patch('/password', async (req, res) => {
         { field: 'id', comparator: '=', value: req.userId },
       ], is_or: false
     },
+    undefined, undefined, undefined, true
   );
   if (!result || result.rows.length < 1) {
     res.status(returnCode.SUCCESS.code).json({ success: false, message: 'Invalid user or password' });
