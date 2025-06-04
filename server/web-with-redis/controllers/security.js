@@ -6,7 +6,7 @@ const returnCode = require('../../simple-web/libs/returnCode');
 
 
 // Use in-memory storage
-const memoryIdempotencyStore = new Map();
+// const memoryIdempotencyStore = new Map();
 
 // Configure CSRF protection
 const csrfProtection = csrf({
