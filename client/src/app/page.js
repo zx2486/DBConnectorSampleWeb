@@ -22,7 +22,7 @@ export default function Home() {
     localStorage.removeItem("accessToken");
 
     try {
-      const response = await apiService.post('/api/account/login', {}, {username, password});
+      const response = await apiService.post('/api/account/login', {}, { username, password });
       const data = response?.data || {};
       if (response.ok && data.success && data.accessToken) {
         setToastMessage("Login successfully!");
@@ -50,7 +50,9 @@ export default function Home() {
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
-      const response = await apiService.post('/api/user/logout', {}, {});
+      const response = await apiService.post('/api/user/logout', {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }, {});
       const data = response?.data || {};
       if (response.ok && data.success) {
         setToastMessage("Logout successfully!");

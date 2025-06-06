@@ -262,3 +262,26 @@ button:disabled {
 .popup-content button:hover {
   background-color: #005bb5;
 }
+
+.url-item {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.url-path {
+  flex-grow: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 16px;
+}
+
+.url-count {
+  flex-shrink: 0;
+  text-align: right;
+  font-weight: bold;
+}

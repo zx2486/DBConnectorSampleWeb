@@ -101,12 +101,12 @@ class ApiService {
       }
       let responseData = await response.text();
       try {
-        responseData = await response.json();
+        responseData = JSON.parse(responseData);
       } catch (e) {
         // If response is not JSON, keep it as text
       }
       const { ok, redirected, status, statusText, url, type } = response;
-      return { ok, redirected,status,statusText,url,type, data: responseData };
+      return { ok, redirected, status, statusText, url, type, data: responseData };
     } catch (error) {
       console.error(`API error (${method} ${endpoint}):`, error);
       throw error;

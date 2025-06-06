@@ -74,7 +74,6 @@ function Posts() {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       }, {});
       if (response.ok) {
-        console.log(`Post with ID ${postId} deleted successfully.`);
         setDeleteId(null);
         setDeletePopup(false);
         setRefreshKey(prevKey => prevKey + 1); // Trigger a refresh
@@ -112,7 +111,6 @@ function Posts() {
       }, { active: !posts.find(post => post.id === postId).active });
 
       if (response.ok) {
-        console.log(`Post with ID ${postId} updated successfully.`);
         setHideId(null);
         setHidePopup(false);
         setRefreshKey(prevKey => prevKey + 1); // Trigger a refresh

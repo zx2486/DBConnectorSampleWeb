@@ -7,12 +7,13 @@ const returnCode = require('../../simple-web/libs/returnCode');
 const retentionPeriod = 1000 * 60 * 60 * 24 * 7; // 7 days in miniseconds
 
 
-const calculateUserActivity = (cache, userId, timestamp) => {
+const calculateUserActivity = (cache, userId, timestamp, isAddingRecord = true) => {
   if (!cache || !userId || !timestamp) {
     console.error('Invalid parameters for calculateUserActivity');
     return;
   }
-  cache.zadd(`user:activity:${userId}`, timestamp, `activity:${timestamp}`).then(() => {
+
+  const removeAndCount = () => {
     const cutoffTime = timestamp - retentionPeriod;
     // Remove old data
     cache.zremrangebyscore(`user:activity:${userId}`, 0, cutoffTime).then(() => {
@@ -27,9 +28,17 @@ const calculateUserActivity = (cache, userId, timestamp) => {
     }).catch(err => {
       console.error('Error removing old activities:', err, userId);
     });
-  }).catch(err => {
-    console.error('Error recording user activity:', err, userId);
-  });
+  }
+
+  if (isAddingRecord) {
+    cache.zadd(`user:activity:${userId}`, timestamp, `activity:${timestamp}`).then(removeAndCount)
+      .catch(err => {
+        console.error('Error recording user activity:', err, userId);
+      });
+  } else {
+    // If not adding record, just remove old data and count
+    removeAndCount();
+  }
 }
 
 const statisticsMiddleware = async (req, res, next) => {
@@ -42,9 +51,9 @@ const statisticsMiddleware = async (req, res, next) => {
   if (cache) {
     res.on('finish', async () => {
       const duration = performance.now() - start;
-      
+
       // Get current data for this URL
-      cache.hgetall(`url:stats:${url}`).then(currentData => {
+      cache.hgetall(`url:stats:${method}:${url}`).then(currentData => {
         // currentData = JSON.parse(currentData || '{}');
         let count = parseInt(currentData?.count || '0');
         let totalTime = parseFloat(currentData?.totalTime || '0');
@@ -56,13 +65,13 @@ const statisticsMiddleware = async (req, res, next) => {
         // Calculate new average
         const avgTime = totalTime / count;
         // Store updated stats in a hash
-        cache.hmset(`url:stats:${url}`, {
+        cache.hmset(`url:stats:${method}:${url}`, {
           count,
           totalTime,
           avgTime
         });
-        cache.zadd('url:processing:times', avgTime, url);
-        cache.zadd('url:count', count, url);
+        cache.zadd('url:processing:times', avgTime, `${method}:${url}`);
+        cache.zadd('url:count', count, `${method}:${url}`);
         // console.log(`${url} - Processing time: ${duration.toFixed(2)}ms, Avg: ${avgTime.toFixed(2)}ms`);
       }).catch(err => {
         console.error('Error updating URL stats:', err);
@@ -85,7 +94,7 @@ const statisticsUserMiddleware = async (req, res, next) => {
 healthRouter.get('/status', async (req, res) => {
   try {
     // get the package version
-    const packageJson = require('../../package.json');
+    const packageJson = require('../../../package.json');
     const returnObj = {
       version: packageJson.version || 'unknown',
       status: 'OK',
@@ -95,10 +104,10 @@ healthRouter.get('/status', async (req, res) => {
     // Check database connection
     const db = req.app?.db;
     if (db) {
-      try{
-        const queryResult = await db.query({text: 'SELECT 1', values: []});
-        if(queryResult && queryResult.count > 0) returnObj.db = true;
-      }catch (e) {
+      try {
+        const queryResult = await db.query({ text: 'SELECT 1', values: [] });
+        if (queryResult && queryResult.count > 0) returnObj.db = true;
+      } catch (e) {
         console.error('Database connection error:', e);
       }
     }
@@ -114,6 +123,9 @@ healthRouter.get('/status', async (req, res) => {
           2
         );
         returnObj.cache = true;
+        await cache.clearCache(
+          { text: hashedCacheKey, values: [] }
+        )
       } catch (e) {
         console.error('Cache connection error:', e);
       }
@@ -145,13 +157,13 @@ const getStatistics = async (cache, key, limit) => {
 
 healthRouter.get('/statistics/url', async (req, res) => {
   try {
-    const cache = req.app?.cache;
+    const cache = await req.app?.cache?.getPoolClient();
     if (!cache) {
       throw new Error('Cache connection not available');
     }
     const result = {
-      slowest: await getStatistics(cache, 'url:processing:times', parstInt(req.params?.limit || 10)),
-      mostFrequent: await getStatistics(cache, 'url:count', parstInt(req.params?.limit || 10))
+      slowest: await getStatistics(cache, 'url:processing:times', parseInt(req.query?.limit || 10)),
+      mostFrequent: await getStatistics(cache, 'url:count', parseInt(req.query?.limit || 10))
     };
     res.status(200).json(result);
   } catch (error) {
@@ -163,19 +175,26 @@ healthRouter.get('/statistics/url', async (req, res) => {
 healthRouter.get('/statistics/users', async (req, res) => {
   try {
     const db = req.app?.db;
-    const cache = req.app?.cache;
+    const cache = await req.app?.cache?.getPoolClient();
     if (!cache || !db) {
       throw new Error('Cache or db connection not available');
     }
     const timestamp = Date.now();
-    const userIds = await db.select([{ table: 'users' }], ['id'],
+    const userIds = await db.select([{ table: 'users' }], ['id', 'username'],
       undefined, undefined, undefined, undefined, true
     );
     for (const user of userIds.rows) {
       const userId = user.id;
-      calculateUserActivity(cache, userId, timestamp);
+      calculateUserActivity(cache, userId, timestamp, false);
     }
-    const activities = await getStatistics(cache, 'alluser:activity', parstInt(req.params?.limit || 20));
+    const activities = await getStatistics(cache, 'alluser:activity', parseInt(req.params?.limit || 20));
+    // replace user id with username
+    for (let i = 0; i < activities.length; i++) {
+      const user = userIds.rows.find(u => u.id === parseInt(activities[i].item));
+      if (user) {
+        activities[i].item = user.username;
+      }
+    }
     res.status(200).json(activities);
   } catch (error) {
     console.error('Error fetching user activity:', error);
