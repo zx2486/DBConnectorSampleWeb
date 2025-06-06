@@ -12,7 +12,6 @@ const calculateUserActivity = (cache, userId, timestamp) => {
     console.error('Invalid parameters for calculateUserActivity');
     return;
   }
-  console.log(`Recording activity for user ${userId} at ${new Date(timestamp).toISOString()}`);
   cache.zadd(`user:activity:${userId}`, timestamp, `activity:${timestamp}`).then(() => {
     const cutoffTime = timestamp - retentionPeriod;
     // Remove old data
@@ -64,7 +63,7 @@ const statisticsMiddleware = async (req, res, next) => {
         });
         cache.zadd('url:processing:times', avgTime, url);
         cache.zadd('url:count', count, url);
-        console.log(`${url} - Processing time: ${duration.toFixed(2)}ms, Avg: ${avgTime.toFixed(2)}ms`);
+        // console.log(`${url} - Processing time: ${duration.toFixed(2)}ms, Avg: ${avgTime.toFixed(2)}ms`);
       }).catch(err => {
         console.error('Error updating URL stats:', err);
       });
@@ -76,7 +75,6 @@ const statisticsMiddleware = async (req, res, next) => {
 
 const statisticsUserMiddleware = async (req, res, next) => {
   const cache = await req.app?.cache?.getPoolClient();
-  console.log('statisticsUserMiddleware', req.userId, req.originalUrl, req.url);
   if (cache && req.userId) {
     const timestamp = Date.now();
     calculateUserActivity(cache, req.userId, timestamp);
