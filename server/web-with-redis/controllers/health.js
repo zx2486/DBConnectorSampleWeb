@@ -8,6 +8,11 @@ const retentionPeriod = 1000 * 60 * 60 * 24 * 7; // 7 days in miniseconds
 
 
 const calculateUserActivity = (cache, userId, timestamp) => {
+  if (!cache || !userId || !timestamp) {
+    console.error('Invalid parameters for calculateUserActivity');
+    return;
+  }
+  console.log(`Recording activity for user ${userId} at ${new Date(timestamp).toISOString()}`);
   cache.zadd(`user:activity:${userId}`, timestamp, `activity:${timestamp}`).then(() => {
     const cutoffTime = timestamp - retentionPeriod;
     // Remove old data
@@ -28,37 +33,35 @@ const calculateUserActivity = (cache, userId, timestamp) => {
   });
 }
 
-const statisticsMiddleware = (req, res, next) => {
+const statisticsMiddleware = async (req, res, next) => {
   const start = performance.now();
   const method = req.method;
   const url = req.originalUrl || req.url;
-  console.log('url start time:', url, method, start);
   // log three things: count of request url, userId (if any), 
   // and url processing time (average and upper quartile)
-  if (req.app?.cache) {
-    const cacheClient = req.app?.cache;
-    res.on('finish', () => {
+  const cache = await req.app?.cache?.getPoolClient();
+  if (cache) {
+    res.on('finish', async () => {
       const duration = performance.now() - start;
-      console.log(`Request to ${req.method} ${req.originalUrl} took ${duration}ms`);
-
+      
       // Get current data for this URL
-      cache.get(`url:stats:${url}`).then(currentData => {
-        currentData = JSON.parse(currentData || '{}');
-        let count = parseInt(currentData.count || '0');
-        let totalTime = parseFloat(currentData.totalTime || '0');
+      cache.hgetall(`url:stats:${url}`).then(currentData => {
+        // currentData = JSON.parse(currentData || '{}');
+        let count = parseInt(currentData?.count || '0');
+        let totalTime = parseFloat(currentData?.totalTime || '0');
 
         // Update counters
         count += 1;
-        totalTime += processingTime;
+        totalTime += duration;
 
         // Calculate new average
         const avgTime = totalTime / count;
         // Store updated stats in a hash
-        cache.hmset(`url:stats:${url}`, JSON.stringify({
+        cache.hmset(`url:stats:${url}`, {
           count,
           totalTime,
           avgTime
-        }));
+        });
         cache.zadd('url:processing:times', avgTime, url);
         cache.zadd('url:count', count, url);
         console.log(`${url} - Processing time: ${duration.toFixed(2)}ms, Avg: ${avgTime.toFixed(2)}ms`);
@@ -66,13 +69,18 @@ const statisticsMiddleware = (req, res, next) => {
         console.error('Error updating URL stats:', err);
       });
     });
-
-    if (req.userId) {
-      const timestamp = Date.now();
-      calculateUserActivity(cacheClient, req.userId, timestamp)
-    }
   }
 
+  next();
+}
+
+const statisticsUserMiddleware = async (req, res, next) => {
+  const cache = await req.app?.cache?.getPoolClient();
+  console.log('statisticsUserMiddleware', req.userId, req.originalUrl, req.url);
+  if (cache && req.userId) {
+    const timestamp = Date.now();
+    calculateUserActivity(cache, req.userId, timestamp);
+  }
   next();
 }
 
@@ -89,19 +97,28 @@ healthRouter.get('/status', async (req, res) => {
     // Check database connection
     const db = req.app?.db;
     if (db) {
-      await db.query('SELECT 1');
-      returnObj.db = true;
-    } else {
-      throw new Error('Database connection not available');
+      try{
+        const queryResult = await db.query({text: 'SELECT 1', values: []});
+        if(queryResult && queryResult.count > 0) returnObj.db = true;
+      }catch (e) {
+        console.error('Database connection error:', e);
+      }
     }
 
     // Check Redis cache connection
     const cache = req.app?.cache;
     if (cache) {
-      await cache.ping();
-      returnObj.cache = true;
-    } else {
-      throw new Error('Redis cache connection not available');
+      const hashedCacheKey = Math.random().toString(36).substring(2)
+      try {
+        await cache.buildCache(
+          { text: hashedCacheKey, values: [] },
+          { rows: [{ id: hashedCacheKey }], count: 1, ttl: 2 },
+          2
+        );
+        returnObj.cache = true;
+      } catch (e) {
+        console.error('Cache connection error:', e);
+      }
     }
 
     res.status(200).json(returnObj);
@@ -112,7 +129,7 @@ healthRouter.get('/status', async (req, res) => {
 })
 
 healthRouter.get('/', async (req, res) => {
-  res.status(returnCode.OK.code).send('OK');
+  res.status(returnCode.SUCCESS.code).send('OK');
 })
 
 const getStatistics = async (cache, key, limit) => {
@@ -170,5 +187,6 @@ healthRouter.get('/statistics/users', async (req, res) => {
 
 module.exports = {
   statisticsMiddleware,
+  statisticsUserMiddleware,
   healthRouter
 };

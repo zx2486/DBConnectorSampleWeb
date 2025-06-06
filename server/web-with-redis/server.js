@@ -16,6 +16,7 @@ const {
 } = require('./controllers/security');
 const {
   statisticsMiddleware,
+  statisticsUserMiddleware,
   healthRouter
 } = require('./controllers/health');
 
@@ -36,7 +37,7 @@ const replicaDBConfig = [
   {
     client: 'pg',
     endpoint: process.env.DB_REPLICA_ENDPOINT || 'localhost',
-    port: process.env.DB_REPLICA_PORT || 5433,
+    port: process.env.DB_REPLICA_PORT || 5432,
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
@@ -47,7 +48,7 @@ const replicaDBConfig = [
   {
     client: 'pg',
     endpoint: process.env.DB_REPLICA2_ENDPOINT || 'localhost',
-    port: process.env.DB_REPLICA2_PORT || 5434,
+    port: process.env.DB_REPLICA2_PORT || 5432,
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
@@ -152,6 +153,7 @@ const startServer = async () => {
 
   app.use('/api/profile',
     extractJWT,
+    statisticsUserMiddleware,      
     csrfProtection, setCsrfToken,
     idempotencyMiddleware,
     wrapRouter(profileRouter)
@@ -159,6 +161,7 @@ const startServer = async () => {
 
   app.use('/api/user',
     extractJWT,
+    statisticsUserMiddleware,
     csrfProtection, setCsrfToken,
     idempotencyMiddleware,
     wrapRouter(userRouter)

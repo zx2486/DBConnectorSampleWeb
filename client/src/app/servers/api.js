@@ -73,9 +73,9 @@ class ApiService {
       }
 
       const headers = {
-        ...reqHeaders,
         'Content-Type': 'application/json',
         'X-CSRF-Token': csrfToken,
+        ...reqHeaders,
       };
 
       if (idempotencyKey) {
@@ -99,7 +99,12 @@ class ApiService {
         // Remove the used key
         this.idempotencyKeys.delete(endpoint);
       }
-      const responseData = await response.json();
+      let responseData = await response.text();
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        // If response is not JSON, keep it as text
+      }
       const { ok, redirected, status, statusText, url, type } = response;
       return { ok, redirected,status,statusText,url,type, data: responseData };
     } catch (error) {
