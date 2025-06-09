@@ -11,6 +11,10 @@ function Health() {
   const [urls, setUrls] = useState([]);
   const [users, setUsers] = useState([]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [toastMessage, setToastMessage] = useState("");
+
   useEffect(() => {
     if (loading) return; // Wait for loading to finish
 
@@ -61,7 +65,35 @@ function Health() {
       .catch(error => {
         console.error('Error fetching health:', error)
       });
-  }, [apiUrl, loading]);
+  }, [apiUrl, loading, refreshKey]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const response = await apiService.delete('/api/health/all', {}, {});
+      const data = response?.data || {};
+      if (response.ok && data.success) {
+        setToastMessage("All statistics removed successfully!");
+        // setContent("");
+      } else {
+        setToastMessage("Failed to submit the request.");
+      }
+    } catch (error) {
+      console.error("Error submitting post:", error);
+      setToastMessage("Failed to submit the request.");
+    } finally {
+      setIsSubmitting(false);
+
+      // Automatically hide the toast after 3 seconds
+      setTimeout(() => {
+        setToastMessage("");
+        setRefreshKey((prevKey) => prevKey + 1); // Trigger refresh
+      }, 3000);
+    }
+  };
 
   return (
     <main className="main">
@@ -99,6 +131,21 @@ function Health() {
           </li>
         ))}
       </ul>
+      <div className="grid">
+        <form onSubmit={handleSubmit} className="form">
+          <div className="form-group">
+            <label htmlFor="content">Dangerous: Remove all cache data (not working for simple-web and web-with-replica)</label>
+          </div>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <span className="loading-icon">⏳ Submitting...</span>
+            ) : (
+              "Submit"
+            )}
+          </button>
+        </form>
+      </div>
+      {toastMessage && <div className="toast">{toastMessage}</div>}
     </main>
   );
 }

@@ -202,6 +202,22 @@ healthRouter.get('/statistics/users', async (req, res) => {
   }
 })
 
+healthRouter.delete('/all', async (req, res) => {
+  try {
+    // Check Redis cache connection
+    const cache = req.app?.cache;
+    if (cache) {
+      await cache.clearAllCache()
+    }
+    res.status(returnCode.SUCCESS.code).json({
+      status: 'OK',
+    });
+  } catch (error) {
+    console.error('Error deleting all statistics:', error);
+    res.status(500).json({ error: error.message });
+  }
+})
+
 module.exports = {
   statisticsMiddleware,
   statisticsUserMiddleware,
