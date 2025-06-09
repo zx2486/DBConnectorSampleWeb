@@ -5,7 +5,7 @@ const securityRouter = express.Router();
 const returnCode = require('../../simple-web/libs/returnCode');
 
 
-// Use in-memory storage
+// Use cache instead of in-memory storage
 // const memoryIdempotencyStore = new Map();
 
 // Configure CSRF protection

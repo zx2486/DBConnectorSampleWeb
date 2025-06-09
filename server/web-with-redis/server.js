@@ -153,7 +153,7 @@ const startServer = async () => {
 
   app.use('/api/profile',
     extractJWT,
-    statisticsUserMiddleware,      
+    statisticsUserMiddleware,
     csrfProtection, setCsrfToken,
     idempotencyMiddleware,
     wrapRouter(profileRouter)

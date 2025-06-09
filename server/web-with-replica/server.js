@@ -14,6 +14,11 @@ const {
   idempotencyMiddleware,
   securityRouter
 } = require('../simple-web/controllers/security');
+const {
+  statisticsMiddleware,
+  statisticsUserMiddleware,
+  healthRouter
+} = require('../simple-web/controllers/health');
 
 const dbConnector = require('../../../DBConnectorToolkit/dist').default;
 const masterDBConfig = {
@@ -105,6 +110,8 @@ const startServer = async () => {
     next();
   });
 
+  app.use(statisticsMiddleware);
+
   // CSRF error handler
   app.use(handleCsrfError);
 
@@ -127,6 +134,7 @@ const startServer = async () => {
 
   app.use('/api/profile',
     extractJWT,
+    statisticsUserMiddleware,
     csrfProtection, setCsrfToken,
     idempotencyMiddleware,
     wrapRouter(profileRouter)
@@ -134,9 +142,14 @@ const startServer = async () => {
 
   app.use('/api/user',
     extractJWT,
+    statisticsUserMiddleware,
     csrfProtection, setCsrfToken,
     idempotencyMiddleware,
     wrapRouter(userRouter)
+  );
+
+  app.use('/api/health',
+    wrapRouter(healthRouter)
   );
 
   app.use((err, req, res, next) => {
