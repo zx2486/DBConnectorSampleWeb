@@ -20,7 +20,7 @@ const statisticsMiddleware = async (req, res, next) => {
       db.insert('activity_log', {
         method,
         url,
-        processing_time: duration,
+        processing_time: duration.toFixed(0),
       }).catch(err => {
         console.error('Error updating URL stats:', err);
       });
@@ -33,14 +33,14 @@ const statisticsMiddleware = async (req, res, next) => {
 const statisticsUserMiddleware = async (req, res, next) => {
   const db = await req.app?.db;
   if (db && req.userId) {
-    const timestamp = Date.now();
+    const timestamp = performance.now().toFixed(0);
     const method = req.method;
     const url = req.originalUrl || req.url;
     db.insert('activity_log', {
       method,
       url,
       user_id: req.userId,
-      processing_time: duration,
+      processing_time: timestamp,
     }).catch(err => {
       console.error('Error updating URL stats:', err);
     });
@@ -99,7 +99,7 @@ healthRouter.get('/', async (req, res) => {
   res.status(returnCode.SUCCESS.code).send('OK');
 })
 
-const getStatistics = async (db, userId, order, limit) => {
+const getStatistics = async (db, order, limit) => {
   const stats = await db.query({
     text: `SELECT 
         method,
@@ -108,22 +108,49 @@ const getStatistics = async (db, userId, order, limit) => {
         COUNT(*) as request_count
     FROM 
         activity_log
-      ${userId ? `WHERE user_id = $2 AND ` : 'WHERE user_id IS NULL'}
+    WHERE user_id IS NULL
     GROUP BY 
         method, 
         url
     ORDER BY 
         ${order == 'count' ? 'request_count' : 'avg_processing_time'} DESC
     LIMIT $1`,
-    values: (userId) ? [userId, limit] : [limit]
+    values: [limit]
   })
   const result = [];
   for (let i = 0; i < stats?.rows?.length || 0; i += 1) {
     const item = stats?.rows[i]?.method + ' ' + stats?.rows[i]?.url;
-    const count = stats?.rows[i]?.request_count || 0;
+    const count = (order == 'count')? stats?.rows[i]?.request_count : stats?.rows[i]?.avg_processing_time || 0;
     result.push({
       item: item,
-      count: parseInt(stats[i + 1])
+      count: parseFloat(count).toFixed(6).replace(/\.?0+$/, '') || 0,
+    });
+  }
+  return result;
+}
+
+getUserStatistics = async (db, limit) => {
+  const stats = await db.query({
+    text: `SELECT 
+        user_id,
+        COUNT(*) as request_count
+    FROM 
+        activity_log
+    WHERE user_id IS NOT NULL
+    GROUP BY 
+        user_id
+    ORDER BY 
+        request_count DESC
+    LIMIT $1`,
+    values: [limit]
+  });
+  const result = [];
+  for (let i = 0; i < stats?.rows?.length || 0; i += 1) {
+    const userId = stats?.rows[i]?.user_id;
+    const count = stats?.rows[i]?.request_count || 0;
+    result.push({
+      item: userId,
+      count: parseFloat(count).toFixed(6).replace(/\.?0+$/, '') || 0,
     });
   }
   return result;
@@ -136,8 +163,8 @@ healthRouter.get('/statistics/url', async (req, res) => {
       throw new Error('Cache connection not available');
     }
     const result = {
-      slowest: await getStatistics(db, false, false, parseInt(req.query?.limit || 10)),
-      mostFrequent: await getStatistics(db, false, 'count', parseInt(req.query?.limit || 10))
+      slowest: await getStatistics(db, false, parseInt(req.query?.limit || 10)),
+      mostFrequent: await getStatistics(db, 'count', parseInt(req.query?.limit || 10))
     };
     res.status(200).json(result);
   } catch (error) {
@@ -149,7 +176,7 @@ healthRouter.get('/statistics/url', async (req, res) => {
 healthRouter.get('/statistics/users', async (req, res) => {
   try {
     const db = req.app?.db;
-    if (!cache) {
+    if (!db) {
       throw new Error('db connection not available');
     }
     const timestamp = Date.now();
@@ -164,7 +191,7 @@ healthRouter.get('/statistics/users', async (req, res) => {
         values: [userId]
       });
     }
-    const activities = await getStatistics(db, userId, 'count', parseInt(req.params?.limit || 20));
+    const activities = await getUserStatistics(db, parseInt(req.params?.limit || 20));
     // replace user id with username
     for (let i = 0; i < activities.length; i++) {
       const user = userIds.rows.find(u => u.id === parseInt(activities[i].item));
