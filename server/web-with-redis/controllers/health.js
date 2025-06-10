@@ -211,6 +211,7 @@ healthRouter.delete('/all', async (req, res) => {
     }
     res.status(returnCode.SUCCESS.code).json({
       status: 'OK',
+      success: true,
     });
   } catch (error) {
     console.error('Error deleting all statistics:', error);
