@@ -120,7 +120,7 @@ const getStatistics = async (db, order, limit) => {
   const result = [];
   for (let i = 0; i < stats?.rows?.length || 0; i += 1) {
     const item = stats?.rows[i]?.method + ' ' + stats?.rows[i]?.url;
-    const count = (order == 'count')? stats?.rows[i]?.request_count : stats?.rows[i]?.avg_processing_time || 0;
+    const count = (order == 'count') ? stats?.rows[i]?.request_count : stats?.rows[i]?.avg_processing_time || 0;
     result.push({
       item: item,
       count: parseFloat(count).toFixed(6).replace(/\.?0+$/, '') || 0,
@@ -189,7 +189,7 @@ healthRouter.get('/statistics/users', async (req, res) => {
       await db.query({
         text: `DELETE FROM activity_log WHERE user_id = $1 AND created_at < NOW() - INTERVAL '${retentionPeriod} milliseconds'`,
         values: [userId]
-      });
+      }, true);
     }
     const activities = await getUserStatistics(db, parseInt(req.params?.limit || 20));
     // replace user id with username
