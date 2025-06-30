@@ -1,5 +1,5 @@
 # DBConnectorSampleWeb
-This module provides some sample web server to demo how DBConnectorToolkit can help under different situations.
+This module provides some sample web server to demo how DBConnectorToolkit can help writing web applications under different situations.
 
 There are four sample setup:
 1) simple-web. Just an expressJS backend server and postgres database, the example client-server website we may learn in web 101 course.
@@ -9,7 +9,7 @@ Check the app.js, there are scripts to build cache on some "popular" queries bef
 4) web-with-kafka-producing. Introduce kafka into the server. This server sends out kafka messages on API usage for analytics. There is no comsumer yet.
 5) web-two-layer-express. This server acts like an API server. It provides service to clients and only connect to read replica and redis. All edit requests and analytics data will be sent to kafka for consumer to handle.
 6) web-two-layer-consumer. This server consumes kafka messages from API server and do the processing in a centralized manner. So this consumer should only have one pod.
-7) web-two-layer-cachelayer. This server handles the cahing logic. It will periodically rebuild the cache in redis on popular queries. It also consumes analytics kafka messages and save some statistics in database for review. 
+7) web-two-layer-cachelayer. This cron job will periodically rebuild the cache in redis on popular queries. It also consumes analytics kafka messages and save some statistics in database for review.
 This can have more than one pod.
 
 ## Setup

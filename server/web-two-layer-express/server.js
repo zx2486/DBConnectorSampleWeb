@@ -14,32 +14,34 @@ const {
   handleCsrfError,
   idempotencyMiddleware,
   securityRouter
-} = require('../web-with-redis/controllers/security');
+} = require('../simple-web/controllers/security');
 const {
   statisticsMiddleware,
   statisticsUserMiddleware,
   healthRouter
-} = require('./controllers/health');
+} = require('../simple-web/controllers/health');
 
 const dbConnector = require('../../../DBConnectorToolkit/dist').default;
-const IORedisClass = require('../../../DBConnectorToolkit/dist/ioredisClass').default;
-const KafkaClass = require('../../../DBConnectorToolkit/dist/kafkaClass').default;
-
+// We are using slave DB as this server is client facing and should not touch master
+// But all the writes will go to kafka.
+// Look at how little you need to change from simple client server to multi-layer backend
 const masterDBConfig = {
   client: 'pg',
-  endpoint: process.env.DB_ENDPOINT || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  username: process.env.DB_USER || 'user',
-  password: process.env.DB_PASSWORD || 'password',
-  database: process.env.DB_DATABASE || 'mydatabase',
+  endpoint: process.env.DB_REPLICA_ENDPOINT || 'localhost',
+  port: process.env.DB_REPLICA_PORT || 5433,
+  username: process.env.DB_REPLICA_USER || 'user',
+  password: process.env.DB_REPLICA_PASSWORD || 'password',
+  database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
   //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+  minConnection: 1,
+  maxConnection: 10
 }
 // Look at how similar to the simple-web server.js file, just add a config
 const replicaDBConfig = [
   {
     client: 'pg',
     endpoint: process.env.DB_REPLICA_ENDPOINT || 'localhost',
-    port: process.env.DB_REPLICA_PORT || 5432,
+    port: process.env.DB_REPLICA_PORT || 5433,
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
@@ -50,7 +52,7 @@ const replicaDBConfig = [
   {
     client: 'pg',
     endpoint: process.env.DB_REPLICA2_ENDPOINT || 'localhost',
-    port: process.env.DB_REPLICA2_PORT || 5432,
+    port: process.env.DB_REPLICA2_PORT || 5434,
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
@@ -71,11 +73,13 @@ const redisConfig = {
 
 const kafkaConfig = {
   client: 'kafka',
-  appName: process.env.KAFKA_APP_NAME || 'web-with-kafka-producing',
+  appName: process.env.KAFKA_APP_NAME || 'web-two-layer',
   brokerList: process.env.KAFKA_BROKER_LIST ?
     process.env.KAFKA_BROKER_LIST.split(',') :
     ['localhost:9092'],
+  dbtopic: process.env.KAFKA_WRITING_DB_TOPIC || 'writing_db_topic',
 }
+
 
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -106,30 +110,15 @@ const wrapRouter = (router) => {
 
 const startServer = async () => {
   let db = null;
-  let cache = null;
-  let msgQueue = null;
   try {
-    db = dbConnector(masterDBConfig, replicaDBConfig, redisConfig);
+    // db = dbConnector(masterDBConfig, replicaDBConfig);
+    db = dbConnector(masterDBConfig, replicaDBConfig, redisConfig, kafkaConfig);
     await db.connect();
   } catch (e) {
     console.error('Error connecting to the database:', e);
   }
 
   try {
-    cache = new IORedisClass({ ...redisConfig, cacheHeader: 'idempotencyStore' });
-    await cache.connect();
-  } catch (e) {
-    console.error('Error connecting to the Redis cache:', e);
-  }
-
-  const msgTopics = {
-    TOPIC_USER_ACTIVITY: 'user-activity',
-    TOPIC_API_METRICS: 'api-metrics'
-  };
-  try {
-    msgQueue = new KafkaClass(kafkaConfig);
-    await msgQueue.connect();
-
     // Create topics if they don't exist, this should be done by a separate script or infra tools in production. Doing it here for simplicity.
     const kafka = new Kafka({
       clientId: kafkaConfig.appName,
@@ -140,14 +129,9 @@ const startServer = async () => {
     await admin.createTopics({
       topics: [
         {
-          topic: msgTopics.TOPIC_USER_ACTIVITY,
+          topic: kafkaConfig.dbtopic, // Topic for writing to the database
           numPartitions: 3,        // Split across 3 partitions
           replicationFactor: 1     // For development (use at least 2 in production)
-        },
-        {
-          topic: msgTopics.TOPIC_API_METRICS,
-          numPartitions: 3,
-          replicationFactor: 1
         }
       ]
     });
@@ -171,7 +155,7 @@ const startServer = async () => {
 
   // Use the dbConnector middleware
   app.use((req, res, next) => {
-    req.app = { db, cache, msgQueue, msgTopics };
+    req.app = { db };
     next();
   });
 
