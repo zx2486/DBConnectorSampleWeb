@@ -21,7 +21,7 @@ const {
   healthRouter
 } = require('../simple-web/controllers/health');
 
-const dbConnector = require('../../../DBConnectorToolkit/dist').default;
+const dbConnector = require('dbconnectortoolkit').default;
 // We are using slave DB as this server is client facing and should not touch master
 // But all the writes will go to kafka.
 // Look at how little you need to change from simple client server to multi-layer backend

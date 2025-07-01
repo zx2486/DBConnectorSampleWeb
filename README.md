@@ -9,8 +9,6 @@ Check the app.js, there are scripts to build cache on some "popular" queries bef
 4) web-with-kafka-producing. Introduce kafka into the server. This server sends out kafka messages on API usage for analytics. There is no comsumer yet.
 5) web-two-layer-express. This server acts like an API server. It provides service to clients and only connect to read replica and redis. All edit requests and analytics data will be sent to kafka for consumer to handle.
 6) web-two-layer-consumer. This server consumes kafka messages from API server and do the processing in a centralized manner. So this consumer should only have one pod.
-7) web-two-layer-cachelayer. This cron job will periodically rebuild the cache in redis on popular queries. It also consumes analytics kafka messages and save some statistics in database for review.
-This can have more than one pod.
 
 ## Setup
 First, setup the docker (docker-compose up -d)

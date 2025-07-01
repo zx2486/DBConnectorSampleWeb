@@ -21,9 +21,9 @@ const {
   healthRouter
 } = require('./controllers/health');
 
-const dbConnector = require('../../../DBConnectorToolkit/dist').default;
-const IORedisClass = require('../../../DBConnectorToolkit/dist/ioredisClass').default;
-const KafkaClass = require('../../../DBConnectorToolkit/dist/kafkaClass').default;
+const dbConnector = require('dbconnectortoolkit').default;
+const IORedisClass = require('dbconnectortoolkit/dist/ioredisClass').default;
+const KafkaClass = require('dbconnectortoolkit/dist/kafkaClass').default;
 
 const masterDBConfig = {
   client: 'pg',

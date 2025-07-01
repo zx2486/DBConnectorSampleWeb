@@ -5,12 +5,9 @@ const crypto = require('crypto');
 const { Kafka } = require('kafkajs');
 
 
-const dbConnector = require('../../../DBConnectorToolkit/dist').default;
-const KafkaClass = require('../../../DBConnectorToolkit/dist/kafkaClass').default;
+const dbConnector = require('dbconnectortoolkit').default;
+const KafkaClass = require('dbconnectortoolkit/dist/kafkaClass').default;
 
-// We are using slave DB as this server is client facing and should not touch master
-// But all the writes will go to kafka.
-// Look at how little you need to change from simple client server to multi-layer backend
 const masterDBConfig = {
   client: 'pg',
   endpoint: process.env.DB_ENDPOINT || 'localhost',

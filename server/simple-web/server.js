@@ -20,7 +20,7 @@ const {
   healthRouter
 } = require('./controllers/health');
 
-const dbConnector = require('../../../DBConnectorToolkit/dist').default;
+const dbConnector = require('dbconnectortoolkit').default;
 const masterDBConfig = {
   client: 'pg',
   endpoint: process.env.DB_ENDPOINT || 'localhost',

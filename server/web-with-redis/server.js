@@ -20,8 +20,8 @@ const {
   healthRouter
 } = require('./controllers/health');
 
-const dbConnector = require('../../../DBConnectorToolkit/dist').default;
-const IORedisClass = require('../../../DBConnectorToolkit/dist/ioredisClass').default;
+const dbConnector = require('dbconnectortoolkit').default;
+const IORedisClass = require('dbconnectortoolkit/dist/ioredisClass').default;
 
 const masterDBConfig = {
   client: 'pg',
