@@ -82,7 +82,7 @@ const statisticsMiddleware = async (req, res, next) => {
               key: crypto.randomUUID(),
             }
           ]).then((msgRes) => {
-            console.log(`Sent messages to Kafka for ${method}:${url} and result:${msgRes}`);
+            console.info(`Sent messages to Kafka for ${method}:${url} and result:${msgRes}`);
           }).catch(err => {
             console.error('Error sending API metric to Kafka:', err);
           });
@@ -112,7 +112,7 @@ const statisticsUserMiddleware = async (req, res, next) => {
           key: crypto.randomUUID(),
         }
       ]).then((msgRes) => {
-        console.log(`Sent user activity to Kafka for userId:${req.userId} and result:${msgRes}`);
+        console.info(`Sent user activity to Kafka for userId:${req.userId} and result:${msgRes}`);
       }).catch(err => {
         console.error('Error sending user activity to Kafka:', err);
       });

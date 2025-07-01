@@ -34,8 +34,8 @@ npx knex migrate:make a_new_script
 ```
 After editing, bring it up or down
 ``` sh
-npm knex migrate:up a_new_script
-npm knex migrate:down a_new_script
+npx knex migrate:up a_new_script
+npx knex migrate:down a_new_script
 ```
 
 

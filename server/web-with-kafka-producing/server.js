@@ -151,7 +151,6 @@ const startServer = async () => {
         }
       ]
     });
-    console.log('Kafka topics created/verified');
     await admin.disconnect();
   } catch (e) {
     console.error('Error connecting to the Kafka message queue:', e);
