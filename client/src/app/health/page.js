@@ -134,7 +134,7 @@ function Health() {
       <div className="grid">
         <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
-            <label htmlFor="content">Dangerous: Remove all cache data (not working for simple-web and web-with-replica)</label>
+            <label htmlFor="content">Dangerous: Remove all statistics data (not working for simple-web and web-with-replica)</label>
           </div>
           <button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (

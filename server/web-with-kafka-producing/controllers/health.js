@@ -239,6 +239,27 @@ healthRouter.delete('/all', async (req, res) => {
     if (cache) {
       await cache.clearAllCache()
     }
+    const db = req.app?.db;
+    if (db) {
+      try {
+        // the cache maybe exist inside the db
+        const testingQuery = { text: 'SELECT 1=1', values: [] };
+        await db.buildCache(testingQuery)
+        const cachedResult = await db.query(testingQuery);
+        if (cachedResult && cachedResult.ttl > 0) {
+          await db.query({
+            text: `DELETE FROM activity_log WHERE 1 = 1`,
+            values: []
+          }, true);
+          await db.query({
+            text: `DELETE FROM db_change_log WHERE status='success'`,
+            values: []
+          }, true);
+        }
+      } catch (e) {
+        console.error('Cache inside db connection error:', e);
+      }
+    }
     res.status(returnCode.SUCCESS.code).json({
       status: 'OK',
       success: true,

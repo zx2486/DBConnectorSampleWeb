@@ -14,7 +14,7 @@ const {
   handleCsrfError,
   idempotencyMiddleware,
   securityRouter
-} = require('../simple-web/controllers/security');
+} = require('../web-with-redis/controllers/security');
 const {
   statisticsMiddleware,
   statisticsUserMiddleware,
@@ -32,7 +32,7 @@ const masterDBConfig = {
   username: process.env.DB_REPLICA_USER || 'user',
   password: process.env.DB_REPLICA_PASSWORD || 'password',
   database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-  //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+  logLevel: process.env.DB_LOG_LEVEL || 'error',
   minConnection: 1,
   maxConnection: 10
 }
@@ -45,7 +45,7 @@ const replicaDBConfig = [
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-    //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+    logLevel: process.env.DB_LOG_LEVEL || 'error',
     minConnection: 1,
     maxConnection: 10
   },
@@ -56,7 +56,7 @@ const replicaDBConfig = [
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-    //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+    logLevel: process.env.DB_LOG_LEVEL || 'error',
     minConnection: 1,
     maxConnection: 10
   },
@@ -66,7 +66,7 @@ const redisConfig = {
   client: 'ioredis',
   url: process.env.REDIS_URL || 'localhost:6379',
   // additionalNodeList:['localhost:7005', 'localhost:7006'],
-  // cluster: true,
+  cluster: true,
   cacheTTL: 60, // Cache TTL in seconds
   revalidate: 10 // Revalidate cache when cache will expire in 10 seconds
 }
@@ -110,12 +110,20 @@ const wrapRouter = (router) => {
 
 const startServer = async () => {
   let db = null;
+  let cache = null;
   try {
     // db = dbConnector(masterDBConfig, replicaDBConfig);
     db = dbConnector(masterDBConfig, replicaDBConfig, redisConfig, kafkaConfig);
     await db.connect();
   } catch (e) {
     console.error('Error connecting to the database:', e);
+  }
+
+  try {
+    cache = new IORedisClass({ ...redisConfig, cacheHeader: 'idempotencyStore' });
+    await cache.connect();
+  } catch (e) {
+    console.error('Error connecting to the Redis cache:', e);
   }
 
   try {
@@ -154,7 +162,7 @@ const startServer = async () => {
 
   // Use the dbConnector middleware
   app.use((req, res, next) => {
-    req.app = { db };
+    req.app = { db, cache };
     next();
   });
 

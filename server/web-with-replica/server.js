@@ -28,7 +28,7 @@ const masterDBConfig = {
   username: process.env.DB_USER || 'user',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'mydatabase',
-  //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+  logLevel: process.env.DB_LOG_LEVEL || 'error',
 }
 // Look at how similar to the simple-web server.js file, just add a config
 const replicaDBConfig = [
@@ -39,7 +39,7 @@ const replicaDBConfig = [
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-    //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+    logLevel: process.env.DB_LOG_LEVEL || 'error',
     minConnection: 1,
     maxConnection: 10
   },
@@ -50,7 +50,7 @@ const replicaDBConfig = [
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-    //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+    logLevel: process.env.DB_LOG_LEVEL || 'error',
     minConnection: 1,
     maxConnection: 10
   },

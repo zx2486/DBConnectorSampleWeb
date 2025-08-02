@@ -26,7 +26,7 @@ const geistMono = Geist_Mono({
 // Create a context to share the isLoggedIn state
 export const AuthContext = createContext();
 
-const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+const apiUrl = process.env.REACT_APP_API_URL || '';
 
 export const apiService = new ApiService(apiUrl);
 

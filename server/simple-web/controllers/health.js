@@ -87,6 +87,19 @@ healthRouter.get('/status', async (req, res) => {
         console.error('Cache connection error:', e);
       }
     }
+    if (db && !cache) {
+      try {
+        // the cache maybe exist inside the db
+        const testingQuery = { text: 'SELECT 1=1', values: [] };
+        await db.buildCache(testingQuery)
+        const cachedResult = await db.query(testingQuery);
+        if (cachedResult && cachedResult.ttl > 0) {
+          returnObj.cache = true;
+        }
+      } catch (e) {
+        console.error('Cache inside db connection error:', e);
+      }
+    }
 
     res.status(200).json(returnObj);
   } catch (error) {
@@ -160,7 +173,7 @@ healthRouter.get('/statistics/url', async (req, res) => {
   try {
     const db = await req.app?.db;
     if (!db) {
-      throw new Error('Cache connection not available');
+      throw new Error('db connection not available');
     }
     const result = {
       slowest: await getStatistics(db, false, parseInt(req.query?.limit || 10)),
@@ -208,6 +221,41 @@ healthRouter.get('/statistics/users', async (req, res) => {
 
 healthRouter.delete('/all', async (req, res) => {
   try {
+    let isCacheDeleted = false;
+    // Check Redis cache connection
+    const cache = req.app?.cache;
+    if (cache) {
+      await cache.clearAllCache()
+      isCacheDeleted = true;
+    }
+    const db = req.app?.db;
+    if (db) {
+      try {
+        // the cache maybe exist inside the db
+        const testingQuery = { text: 'SELECT 1=1', values: [] };
+        await db.buildCache(testingQuery)
+        const cachedResult = await db.query(testingQuery);
+        if (cachedResult && cachedResult.ttl > 0) {
+          await db.query({
+            text: `DELETE FROM activity_log WHERE 1 = 1`,
+            values: []
+          }, true);
+          await db.query({
+            text: `DELETE FROM db_change_log WHERE status='success'`,
+            values: []
+          }, true);
+          isCacheDeleted = true;
+        }
+      } catch (e) {
+        console.error('Cache inside db connection error:', e);
+      }
+    }
+    if (isCacheDeleted) {
+      res.status(returnCode.SUCCESS.code).json({
+        status: 'OK',
+        success: true,
+      });
+    }
     res.status(returnCode.INVALID_REQUEST.code).json({
       error: 'This endpoint is not implemented yet. Please check back later.'
     });

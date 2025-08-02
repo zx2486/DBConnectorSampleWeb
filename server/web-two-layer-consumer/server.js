@@ -15,7 +15,7 @@ const masterDBConfig = {
   username: process.env.DB_USER || 'user',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'mydatabase',
-  //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+  logLevel: process.env.DB_LOG_LEVEL || 'error',
 }
 
 const kafkaConfig = {

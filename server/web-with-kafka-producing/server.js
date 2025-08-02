@@ -32,7 +32,7 @@ const masterDBConfig = {
   username: process.env.DB_USER || 'user',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'mydatabase',
-  //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+  logLevel: process.env.DB_LOG_LEVEL || 'error',
 }
 // Look at how similar to the simple-web server.js file, just add a config
 const replicaDBConfig = [
@@ -43,7 +43,7 @@ const replicaDBConfig = [
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-    //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+    logLevel: process.env.DB_LOG_LEVEL || 'error',
     minConnection: 1,
     maxConnection: 10
   },
@@ -54,7 +54,7 @@ const replicaDBConfig = [
     username: process.env.DB_REPLICA_USER || 'user',
     password: process.env.DB_REPLICA_PASSWORD || 'password',
     database: process.env.DB_REPLICA_DATABASE || 'mydatabase',
-    //  logLevel: process.env.DB_LOG_LEVEL || 'error',
+    logLevel: process.env.DB_LOG_LEVEL || 'error',
     minConnection: 1,
     maxConnection: 10
   },
@@ -64,7 +64,7 @@ const redisConfig = {
   client: 'ioredis',
   url: process.env.REDIS_URL || 'localhost:6379',
   // additionalNodeList:['localhost:7005', 'localhost:7006'],
-  // cluster: true,
+  cluster: true,
   cacheTTL: 60, // Cache TTL in seconds
   revalidate: 10 // Revalidate cache when cache will expire in 10 seconds
 }
