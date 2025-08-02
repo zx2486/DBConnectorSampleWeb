@@ -10,6 +10,8 @@ Check the app.js, there are scripts to build cache on some "popular" queries bef
 5) web-two-layer-express. This server acts like an API server. It provides service to clients and only connect to read replica and redis. All edit requests and analytics data will be sent to kafka for consumer to handle.
 6) web-two-layer-consumer. This server consumes kafka messages from API server and do the processing in a centralized manner. So this consumer should only have one pod.
 
+A demo site ([dbconnectorapi.authpaper.com](https://dbconnectorapi.authpaper.com)) is built using web-two-layer-express and web-two-layer-consumer setup.
+
 ## Setup
 First, setup the docker (docker-compose up -d)
 Second, insert the database data into the database (mydatabase)

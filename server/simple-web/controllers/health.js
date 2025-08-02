@@ -229,23 +229,11 @@ healthRouter.delete('/all', async (req, res) => {
       isCacheDeleted = true;
     }
     const db = req.app?.db;
-    if (db) {
+    if (db && cache) {
       try {
-        // the cache maybe exist inside the db
-        const testingQuery = { text: 'SELECT 1=1', values: [] };
-        await db.buildCache(testingQuery)
-        const cachedResult = await db.query(testingQuery);
-        if (cachedResult && cachedResult.ttl > 0) {
-          await db.query({
-            text: `DELETE FROM activity_log WHERE 1 = 1`,
-            values: []
-          }, true);
-          await db.query({
-            text: `DELETE FROM db_change_log WHERE status='success'`,
-            values: []
-          }, true);
-          isCacheDeleted = true;
-        }
+        await db.delete('activity_log', { array: [['true', 'true']], is_or: false });
+        await db.delete('db_change_log', { array: [['status', 'success']], is_or: false });
+        isCacheDeleted = true;
       } catch (e) {
         console.error('Cache inside db connection error:', e);
       }
@@ -255,6 +243,7 @@ healthRouter.delete('/all', async (req, res) => {
         status: 'OK',
         success: true,
       });
+      return;
     }
     res.status(returnCode.INVALID_REQUEST.code).json({
       error: 'This endpoint is not implemented yet. Please check back later.'
