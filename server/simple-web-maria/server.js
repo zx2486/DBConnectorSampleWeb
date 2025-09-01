@@ -20,7 +20,8 @@ const {
   healthRouter
 } = require('./controllers/health');
 
-const dbConnector = require('../../../DBConnectorToolkit/dist').default;
+const dbConnector = require('dbconnectortoolkit').default;
+// const dbConnector = require('../../../DBConnectorToolkit/dist').default;
 const masterDBConfig = {
   client: 'mariadb',
   endpoint: process.env.DB_ENDPOINT || 'localhost',
